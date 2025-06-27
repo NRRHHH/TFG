@@ -1,0 +1,94 @@
+MODULE Module11
+    
+    VAR socketdev serverSocket;
+    VAR socketdev clientSocket;
+    VAR string data;
+!    VAR bool keep_listening := TRUE;
+!    VAR bool okX;
+!    VAR bool okY;
+!    VAR num cambioStrX;
+!    VAR num cambioStrY;
+!    VAR string XValorString;
+!    VAR string YValorString;    
+    VAR string client_ip := "192.168.125.1"; !Set the IP of the WAN port of the real robot 192.168,0.91
+    !Process' variables
+!    CONST robtarget ptoReposo:=[[558.569062375,391.204728564,297.631913338],[-0.000000013,-0.000000022,1,0.000000006],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];
+!    CONST robtarget ptoPick:=[[190.152964329,689.995892332,56.318084196],[-0.00000001,0.000000013,1,-0.000000005],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];
+!    CONST robtarget ptoAux:=[[204.950713217,341.660605837,100],[0.000000114,0.000000004,1,0.000000036],[0,-1,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];
+!    VAR robtarget ptoCamara := ptoAux;
+
+    VAR num position;
+    VAR num speed;
+    VAR num torque;
+    VAR num exttorque;
+    VAR string out;
+
+    PROC main()
+        !Add your code here ****************************************************
+        SocketCreate serverSocket; !Create a temp_socket
+        SocketBind serverSocket, client_ip, 1025;
+        SocketListen serverSocket;
+        !WaitTime 10;
+        SocketAccept serverSocket,clientSocket,\Time:=WAIT_MAX;
+        SocketSend clientSocket \Str:="GoFa connected succesfully";
+!        SocketReceive clientSocket \Str:= data;
+!        Reset Local_IO_0_DO1;
+        
+        WHILE TRUE DO
+            GetJointData \MechUnit:=ROB_1, 1 \ExtTorque:=exttorque;
+            out:=ValToStr(exttorque);
+            GetJointData \MechUnit:=ROB_1, 2 \ExtTorque:=exttorque;
+            out:=out+"|"+ValToStr(exttorque);
+            GetJointData \MechUnit:=ROB_1, 3 \ExtTorque:=exttorque;
+            out:=out+"|"+ValToStr(exttorque);
+            GetJointData \MechUnit:=ROB_1, 4 \ExtTorque:=exttorque;
+            out:=out+"|"+ValToStr(exttorque);
+            GetJointData \MechUnit:=ROB_1, 5 \ExtTorque:=exttorque;
+            out:=out+"|"+ValToStr(exttorque);
+            GetJointData \MechUnit:=ROB_1, 6 \ExtTorque:=exttorque;
+            out:=out+"|"+ValToStr(exttorque);
+!            TPWrite out;
+            SocketSend clientSocket \Str:=out;
+            WaitTime 0.001;
+            
+        ENDWHILE
+        SocketClose clientSocket;
+        SocketClose serverSocket;
+        
+        ! Error handler for power fail and connection lost
+!        ERROR
+!            IF ERRNO=ERR_SOCK_TIMEOUT THEN
+!                RETRY;
+!            ELSEIF ERRNO=ERR_SOCK_CLOSED THEN
+!                SocketClose clientSocket;
+!                SocketClose serverSocket;
+!                SocketCreate serverSocket;
+!                SocketBind serverSocket, client_ip, 1025;
+!                SocketListen serverSocket;
+!                SocketAccept serverSocket, clientSocket;
+!                SocketSend clientSocket \Str:="GoFa Reconnected";
+!                SocketReceive clientSocket \Str:= data;
+!                data := "";
+!                RETRY;
+!            ELSE
+!                TPWrite "ERRNO = "\Num:=ERRNO;
+!                Stop;
+!            ENDIF
+    ENDPROC
+    
+!    PROC recogerPieza()
+!        ConfJ\Off;
+!        ConfL\Off;
+!        MoveJ ptoReposo,v1000,z100,Servo\WObj:=wobj0;
+!        MoveJ Offs(ptoPick,0,0,100),v800,z10,Servo\WObj:=wobj0;
+!        MoveL ptoPick,v100,fine,Servo\WObj:=wobj0;
+!        Set Local_IO_0_DO1;
+!        MoveJ Offs(ptoPick,0,0,50),v400,z10,Servo\WObj:=wobj0;
+!        MoveJ ptoReposo,v800,z100,Servo\WObj:=wobj0;
+!        MoveJ Offs(ptoCamara,0,0,100),v800,z10,Servo\WObj:=Workobject_1;
+!        MoveL ptoCamara,v100,fine,Servo\WObj:=Workobject_1;
+!        Reset Local_IO_0_DO1;
+!        MoveJ Offs(ptoCamara,0,0,100),v800,z10,Servo\WObj:=Workobject_1;
+!    ENDPROC
+    
+ENDMODULE
