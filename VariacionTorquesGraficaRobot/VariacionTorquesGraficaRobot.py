@@ -1,4 +1,4 @@
-# Live plotting of external joint torques received via TCP socket from an ABB robot.
+# Live plotting of external joint torques received via TCP socket from an ABB robot
 
 import collections
 import matplotlib.pyplot as plt
@@ -6,16 +6,16 @@ import numpy as np
 import socket 
 import time
 
-# -------------------- Parámetros de configuración -------------------- #
-STEPS = 100                    # Número de muestras a mostrar en la gráfica
-TIME_INTERVAL = 0.001          # Tiempo entre actualizaciones (s)
+# -------------------- Configuration parameters ----------------------- #
+STEPS = 100                    # Number of samples to display on the plot
+TIME_INTERVAL = 0.001          # Update interval (s)
 
-# -------------------- Inicializar conexión --------------------------- #
+# -------------------- Initialize connection -------------------------- #
 mi_socket = socket.socket() 
 mi_socket.connect(("192.168.125.1" , 1025)) 
 print(mi_socket.recv(1024)) 
 
-# -------------------- Preparar gráfica ------------------------------- #
+# -------------------- Prepare plot ----------------------------------- #
 t = np.arange(0, STEPS)
 values = [collections.deque(np.zeros(t.shape)) for i in range(6)]
 limits = (0, 0)
@@ -40,7 +40,7 @@ bg = fig.canvas.copy_from_bbox(fig.bbox)
 fig.draw_artist(axes)
 fig.canvas.blit(fig.bbox)
 
-# -------------------- Bucle principal ------------------------------- #
+# -------------------- Main loop ------------------------------------- #
 while True:
   respuesta = mi_socket.recv(1024).decode('utf-8') 
   arr_str = respuesta.split('|')
@@ -48,12 +48,12 @@ while True:
   try:
     arr_num = [float(s) for s in arr_str]
     if len(arr_num) != 6: 
-        continue  # Saltar si no hay 6 datos 
+        continue  # Skip if not exactly 6 values
 
     for i in range(len(values)):
       values[i].popleft()
       values[i].append(arr_num[i])
-      print(f"Canal {i+1}: Últimos valores -> {list(values[i])[-6:]}")  # Muestra los últimos 5 valores
+      print(f"Canal {i+1}: Últimos valores -> {list(values[i])[-6:]}")  # Show last 5 values
 
     fig.canvas.restore_region(bg)
 
@@ -78,10 +78,10 @@ while True:
     fig.canvas.blit(fig.bbox)
     fig.canvas.flush_events()
 
-    time.sleep(TIME_INTERVAL) # FIXME
+    time.sleep(TIME_INTERVAL) 
 
   except Exception as e:
-    print("Error en el bucle principal:", e)
+    print("Error in main loop:", e)
 
 mi_socket.sendall('Server connected'.encode()) 
 mi_socket.close() 
