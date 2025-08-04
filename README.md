@@ -20,7 +20,7 @@ Agrupa los tres componentes principales del sistema que ejecuta y corrige trayec
 
 3. **Python – controlador principal:**
     - Hilo de lectura (sensor_reader) que recibe datos por socket y calcula la fuerza estimada en Z (F_z) usando PyKDL.
-    - Inicializa el nodo EGM (EGM()), recibe datos del robot y aplica correcciones en Z mediante send_to_robot_path_corr.
+    - Inicializa el nodo EGM , recibe datos del robot y aplica correcciones en Z mediante send_to_robot_path_corr.
     - Visualiza F_z en una gráfica en tiempo real utilizando Matplotlib.
 
 # VariacionTorquesGraficaRobot
