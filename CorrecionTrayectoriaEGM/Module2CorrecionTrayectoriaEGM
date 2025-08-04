@@ -1,0 +1,139 @@
+MODULE Module2  
+    ! Task 2: lee los sensores (con sockets)
+
+    VAR socketdev serverSocket;
+    VAR socketdev clientSocket;
+    VAR string data;
+    VAR string client_ip := "192.168.125.1"; !Para robot real
+    
+    VAR num position;
+    VAR num speed;
+    VAR num torque;
+    VAR num exttorque;
+    VAR string out;
+    
+    !Para simulación
+    VAR num baseValue := 10;         ! Valor base que se irá multiplicando
+    VAR num factor := 1;             ! Multiplicador del valor base
+    VAR num currentValue;            ! Valor generado en cada paso
+    VAR num i;
+
+    PROC main()
+        
+        DatosExtTorqueRobot;
+!        DatosExtTorqueSimu;
+
+    ENDPROC
+    
+    PROC DatosExtTorqueRobot()
+
+        SocketCreate serverSocket; !Create a temp_socket
+        SocketBind serverSocket, client_ip, 1025; !Para robot real
+        SocketListen serverSocket;
+        SocketAccept serverSocket,clientSocket,\Time:=WAIT_MAX;
+        SocketSend clientSocket \Str:="GoFa connected succesfully";
+
+        WHILE TRUE DO
+            
+            GetJointData \MechUnit:=ROB_1, 1 \Position:=position \Speed:=speed \Torque:=torque \ExtTorque:=exttorque;
+            exttorque := GetMotorTorque(1);
+            out:="1:"+ValToStr(Trunc(position\Dec:=2))+"|"+ValToStr(Trunc(speed\Dec:=2))+"|"+ValToStr(Trunc(exttorque\Dec:=2));
+            SocketSend clientSocket \Str:=out;
+            
+            GetJointData \MechUnit:=ROB_1, 2 \Position:=position \Speed:=speed \Torque:=torque \ExtTorque:=exttorque;
+            exttorque := GetMotorTorque(2);
+            out:="2:"+ValToStr(Trunc(position\Dec:=2))+"|"+ValToStr(Trunc(speed\Dec:=2))+"|"+ValToStr(Trunc(exttorque\Dec:=2));
+            SocketSend clientSocket \Str:=out;
+            
+            GetJointData \MechUnit:=ROB_1, 3 \Position:=position \Speed:=speed \Torque:=torque \ExtTorque:=exttorque;
+            exttorque := GetMotorTorque(3);
+            out:="3:"+ValToStr(Trunc(position\Dec:=2))+"|"+ValToStr(Trunc(speed\Dec:=2))+"|"+ValToStr(Trunc(exttorque\Dec:=2));
+            SocketSend clientSocket \Str:=out;
+            
+            GetJointData \MechUnit:=ROB_1, 4 \Position:=position \Speed:=speed \Torque:=torque \ExtTorque:=exttorque;
+            exttorque := GetMotorTorque(4);
+            out:="4:"+ValToStr(Trunc(position\Dec:=2))+"|"+ValToStr(Trunc(speed\Dec:=2))+"|"+ValToStr(Trunc(exttorque\Dec:=2));
+            SocketSend clientSocket \Str:=out;
+            
+            GetJointData \MechUnit:=ROB_1, 5 \Position:=position \Speed:=speed \Torque:=torque \ExtTorque:=exttorque;
+            exttorque := GetMotorTorque(5);
+            out:="5:"+ValToStr(Trunc(position\Dec:=2))+"|"+ValToStr(Trunc(speed\Dec:=2))+"|"+ValToStr(Trunc(exttorque\Dec:=2));
+            SocketSend clientSocket \Str:=out;
+            
+            GetJointData \MechUnit:=ROB_1, 6 \Position:=position \Speed:=speed \Torque:=torque \ExtTorque:=exttorque;
+            exttorque := GetMotorTorque(6);
+            out:="6:"+ValToStr(Trunc(position\Dec:=2))+"|"+ValToStr(Trunc(speed\Dec:=2))+"|"+ValToStr(Trunc(exttorque\Dec:=2));
+            SocketSend clientSocket \Str:=out;
+            
+            WaitTime 0.01;
+            
+        ENDWHILE
+        
+        SocketClose clientSocket;
+        SocketClose serverSocket;
+        
+         ! Error handler for power fail and connection lost
+        ERROR
+            IF ERRNO=ERR_SOCK_TIMEOUT THEN
+                RETRY;
+            ELSEIF ERRNO=ERR_SOCK_CLOSED THEN
+                SocketClose clientSocket;
+                SocketClose serverSocket;
+                SocketCreate serverSocket;
+                SocketBind serverSocket, client_ip, 1025;
+                SocketListen serverSocket;
+                SocketAccept serverSocket, clientSocket;
+                SocketSend clientSocket \Str:="GoFa Reconnected";
+!                SocketReceive clientSocket \Str:= data;
+!                data := "";
+                RETRY;
+            ELSE
+                TPWrite "ERRNO = "\Num:=ERRNO;
+                Stop;
+            ENDIF
+        
+    ENDPROC
+    
+    PROC DatosExtTorqueSimu()
+        
+        SocketCreate serverSocket;
+        SocketBind serverSocket, "127.0.0.1", 1025; ! Para simulación
+        SocketListen serverSocket;
+        SocketAccept serverSocket,clientSocket,\Time:=WAIT_MAX;
+        SocketSend clientSocket \Str:="GoFa connected succesfully";
+    
+       WHILE TRUE DO
+            ! Generar 50 valores con el mismo nivel
+            FOR i FROM 1 TO 50 DO
+                currentValue := baseValue * factor;
+                out:=ValToStr(Trunc(currentValue\Dec:=2))+"|"+ValToStr(Trunc(currentValue\Dec:=2))+"|"+ValToStr(Trunc(currentValue\Dec:=2))+"||";
+                currentValue := baseValue * factor;
+                out:=out+ValToStr(Trunc(currentValue\Dec:=2))+"|"+ValToStr(Trunc(currentValue\Dec:=2))+"|"+ValToStr(Trunc(currentValue\Dec:=2))+"||";
+                currentValue := baseValue * factor;
+                out:=out+ValToStr(Trunc(currentValue\Dec:=2))+"|"+ValToStr(Trunc(currentValue\Dec:=2))+"|"+ValToStr(Trunc(currentValue\Dec:=2))+"||";
+                currentValue := baseValue * factor;
+                out:=out+ValToStr(Trunc(currentValue\Dec:=2))+"|"+ValToStr(Trunc(currentValue\Dec:=2))+"|"+ValToStr(Trunc(currentValue\Dec:=2))+"||";
+                currentValue := baseValue * factor;
+                out:=out+ValToStr(Trunc(currentValue\Dec:=2))+"|"+ValToStr(Trunc(currentValue\Dec:=2))+"|"+ValToStr(Trunc(currentValue\Dec:=2))+"||";
+                currentValue := baseValue * factor;
+                out:=out+ValToStr(Trunc(currentValue\Dec:=2))+"|"+ValToStr(Trunc(currentValue\Dec:=2))+"|"+ValToStr(Trunc(currentValue\Dec:=2));
+                
+            SocketSend clientSocket \Str:=out;
+            WaitTime 0.001;
+            ENDFOR
+            
+            ! Aumentar el factor para el siguiente bloque de 100 valores
+            factor := factor + 1.0;
+        
+            ! Si quieres que el ciclo se reinicie tras cierto nivel:
+            IF factor > 10 THEN
+                factor := 1.0;
+            ENDIF
+        ENDWHILE
+    
+        SocketClose clientSocket;
+        SocketClose serverSocket;
+    
+    ENDPROC
+
+ENDMODULE
