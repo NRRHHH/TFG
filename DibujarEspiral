@@ -1,0 +1,57 @@
+MODULE Module1
+! Draw a spiral path using MoveL commands without force control
+
+    TASK PERS tooldata FC_tool := [TRUE,[[0,0,80],[1,0,0,0]],[0.1,[303.7,0,718.1],[1,0,0,0],0,0,0]];
+    TASK PERS tooldata RotuFC := [TRUE,[[0,0,147],[1,0,0,0]],[0.1,[303.7,0,718.1],[1,0,0,0],0,0,0]];
+    
+    TASK PERS wobjdata Wobj_box:=[FALSE,TRUE,"",[[270.937006247,-120,230],[1,0,0,0]],[[0,0,0],[1,0,0,0]]];
+    
+    CONST robtarget pHome:=[[147.64,153.01,13.87],[9.83686E-06,-0.000225953,-1,3.86404E-06],[0,-1,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    
+    CONST robtarget P1:=[[100,100,10],[0,0,1,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    CONST robtarget P2:=[[200,100,10],[0,0,1,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    CONST robtarget P3:=[[200,200,10],[0,0,1,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    CONST robtarget P4:=[[100,200,10],[0,0,1,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    
+    CONST robtarget center := [[150,150,10],[0,0,1,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    
+    CONST num angle_increment := pi / 10;
+    CONST num radius_increment := 0.01;    
+    VAR num angle := 0;
+    VAR num radius := 0;
+    VAR robtarget p := center;
+ 
+    PROC main()
+    
+         MoveJ pHome,v100,z10,RotuFC\WObj:=Wobj_box;
+
+         ! Draw spiral without force control
+         DibujarEspiral;
+         
+         MoveJ pHome,v100,z10,RotuFC\WObj:=Wobj_box;
+        
+    ENDPROC
+    
+    
+    PROC DibujarEspiral()
+        ConfJ\Off;
+        ConfL\Off;
+        
+        MoveJ Offs(center,0,0,100),v200,z10,RotuFC\WObj:=Wobj_box;
+        MoveL center,v100,fine,RotuFC\WObj:=Wobj_box;
+        
+        WHILE TRUE DO
+            p.trans.x := center.trans.x + radius * Cos(angle);
+            p.trans.y := center.trans.y + radius * Sin(angle);
+            
+            MoveL p,v10,z0,RotuFC\WObj:=Wobj_box;
+            
+            angle := angle + angle_increment;
+            radius := radius + radius_increment;
+        ENDWHILE
+        
+        ConfJ\On;
+        ConfL\On;
+    ENDPROC
+
+ENDMODULE
