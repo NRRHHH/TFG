@@ -6,7 +6,7 @@ Este repositorio recoge los archivos de mi proyecto de fin de carrera.
 - Universidad Carlos III de Madrid  
 - Año: 2025
 
-# VariacionTorquesGraficaRobot:
+# VariacionTorquesGraficaRobot
 
 Permite leer y visualizar en tiempo real los pares articulares externos (**exttorque**) de un robot colaborativo ABB GoFa, usando comunicación por sockets y gráficos con Matplotlib.
 
