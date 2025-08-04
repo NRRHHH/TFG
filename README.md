@@ -2,15 +2,13 @@
 
 Este repositorio recoge los archivos de mi proyecto de fin de carrera.
 
-Proyecto desarrollado por Noelia Regidor Hontana
-
-Universidad Carlos III de Madrid
-
-Año 2025
+- Proyecto desarrollado por **Noelia Regidor Hontana**  
+- Universidad Carlos III de Madrid  
+- Año: 2025
 
 # VariacionTorquesGraficaRobot:
 
-Permite leer y visualizar en tiempo real los pares articulares externos (exttorque) de un robot colaborativo ABB GoFa, usando comunicación por sockets y gráficos con Matplotlib.
+Permite leer y visualizar en tiempo real los pares articulares externos (**exttorque**) de un robot colaborativo ABB GoFa, usando comunicación por sockets y gráficos con Matplotlib.
 
 Se compone de dos partes:
 
@@ -21,3 +19,13 @@ Se compone de dos partes:
 2. **Script Python (PC):**
    - Se conecta al robot como cliente TCP.
    - Recibe los datos y actualiza una gráfica en tiempo real para cada articulación.
+
+# DibujarEspiral.modx
+
+Este módulo permite que el robot trace una trayectoria en espiral en el plano XY, con una herramienta definida y un objeto de trabajo referenciado.
+
+Características:
+
+- Usa instrucciones MoveL para formar una espiral creciente alrededor de un punto central.
+- No incorpora control de fuerza.
+- Útil como demostración geométrica o base para experimentos de contacto.
