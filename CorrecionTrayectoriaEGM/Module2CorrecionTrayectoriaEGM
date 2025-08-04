@@ -1,10 +1,10 @@
 MODULE Module2  
-    ! Task 2: lee los sensores (con sockets)
+! Task 2: reads sensor data (using sockets)
 
     VAR socketdev serverSocket;
     VAR socketdev clientSocket;
     VAR string data;
-    VAR string client_ip := "192.168.125.1"; !Para robot real
+    VAR string client_ip := "192.168.125.1"; ! For real robot
     
     VAR num position;
     VAR num speed;
@@ -12,11 +12,10 @@ MODULE Module2
     VAR num exttorque;
     VAR string out;
     
-    !Para simulación
-    VAR num baseValue := 10;         ! Valor base que se irá multiplicando
-    VAR num factor := 1;             ! Multiplicador del valor base
-    VAR num currentValue;            ! Valor generado en cada paso
-    VAR num i;
+    ! For simulation
+    VAR num baseValue := 10;         ! Base value to be multiplied
+    VAR num factor := 1;             ! Multiplier of the base value
+    VAR num currentValue;            ! Value generated in each step
 
     PROC main()
         
@@ -27,8 +26,8 @@ MODULE Module2
     
     PROC DatosExtTorqueRobot()
 
-        SocketCreate serverSocket; !Create a temp_socket
-        SocketBind serverSocket, client_ip, 1025; !Para robot real
+        SocketCreate serverSocket; ! Create a temp_socket
+        SocketBind serverSocket, client_ip, 1025; ! For real robot
         SocketListen serverSocket;
         SocketAccept serverSocket,clientSocket,\Time:=WAIT_MAX;
         SocketSend clientSocket \Str:="GoFa connected succesfully";
@@ -72,7 +71,7 @@ MODULE Module2
         SocketClose clientSocket;
         SocketClose serverSocket;
         
-         ! Error handler for power fail and connection lost
+        ! Error handler for power fail and connection lost
         ERROR
             IF ERRNO=ERR_SOCK_TIMEOUT THEN
                 RETRY;
@@ -84,8 +83,8 @@ MODULE Module2
                 SocketListen serverSocket;
                 SocketAccept serverSocket, clientSocket;
                 SocketSend clientSocket \Str:="GoFa Reconnected";
-!                SocketReceive clientSocket \Str:= data;
-!                data := "";
+                ! SocketReceive clientSocket \Str:= data;
+                ! data := "";
                 RETRY;
             ELSE
                 TPWrite "ERRNO = "\Num:=ERRNO;
@@ -97,13 +96,13 @@ MODULE Module2
     PROC DatosExtTorqueSimu()
         
         SocketCreate serverSocket;
-        SocketBind serverSocket, "127.0.0.1", 1025; ! Para simulación
+        SocketBind serverSocket, "127.0.0.1", 1025; ! For simulation
         SocketListen serverSocket;
         SocketAccept serverSocket,clientSocket,\Time:=WAIT_MAX;
         SocketSend clientSocket \Str:="GoFa connected succesfully";
     
        WHILE TRUE DO
-            ! Generar 50 valores con el mismo nivel
+            ! Generate 50 values with the same level
             FOR i FROM 1 TO 50 DO
                 currentValue := baseValue * factor;
                 out:=ValToStr(Trunc(currentValue\Dec:=2))+"|"+ValToStr(Trunc(currentValue\Dec:=2))+"|"+ValToStr(Trunc(currentValue\Dec:=2))+"||";
@@ -121,11 +120,11 @@ MODULE Module2
             SocketSend clientSocket \Str:=out;
             WaitTime 0.001;
             ENDFOR
-            
-            ! Aumentar el factor para el siguiente bloque de 100 valores
+
+            ! Increase the factor for the next block of 100 values
             factor := factor + 1.0;
-        
-            ! Si quieres que el ciclo se reinicie tras cierto nivel:
+
+            ! Optional: reset the cycle when reaching a certain level
             IF factor > 10 THEN
                 factor := 1.0;
             ENDIF
