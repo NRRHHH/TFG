@@ -1,16 +1,21 @@
+# Live plotting of external joint torques received via TCP socket from an ABB robot.
+
 import collections
 import matplotlib.pyplot as plt
 import numpy as np
 import socket 
 import time
 
-STEPS = 100
-TIME_INTERVAL = 0.001
+# -------------------- Parámetros de configuración -------------------- #
+STEPS = 100                    # Número de muestras a mostrar en la gráfica
+TIME_INTERVAL = 0.001          # Tiempo entre actualizaciones (s)
 
+# -------------------- Inicializar conexión --------------------------- #
 mi_socket = socket.socket() 
 mi_socket.connect(("192.168.125.1" , 1025)) 
 print(mi_socket.recv(1024)) 
 
+# -------------------- Preparar gráfica ------------------------------- #
 t = np.arange(0, STEPS)
 values = [collections.deque(np.zeros(t.shape)) for i in range(6)]
 limits = (0, 0)
@@ -19,6 +24,7 @@ fig, axes = plt.subplots(1, 1)
 axes.set_title('Torques')
 axes.set_ylabel('Nm') 
 axes.set_animated(True)
+axes.legend(loc='upper right') 
 
 (ln_q1,) = axes.plot(values[0], label='ExtTorque, axis 1', color='red')
 (ln_q2,) = axes.plot(values[1], label='ExtTorque, axis 2', color='green')
@@ -27,17 +33,14 @@ axes.set_animated(True)
 (ln_q5,) = axes.plot(values[4], label='ExtTorque, axis 5', color='pink')
 (ln_q6,) = axes.plot(values[5], label='ExtTorque, axis 6', color='orange')
 
-axes.legend(loc='upper right') 
-
 plt.show(block=False)
 plt.pause(0.1)
 
 bg = fig.canvas.copy_from_bbox(fig.bbox)
-
 fig.draw_artist(axes)
-
 fig.canvas.blit(fig.bbox)
 
+# -------------------- Bucle principal ------------------------------- #
 while True:
   respuesta = mi_socket.recv(1024).decode('utf-8') 
   arr_str = respuesta.split('|')
