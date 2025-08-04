@@ -46,3 +46,15 @@ Características:
 - Usa instrucciones MoveL para formar una espiral creciente alrededor de un punto central.
 - No incorpora control de fuerza.
 - Útil como demostración geométrica o base para experimentos de contacto.
+
+# EjemploPathCorrection.py
+
+Demuestra cómo aplicar una corrección de trayectoria senoidal en tiempo real sobre el eje Y del robot ABB mientras se desplaza en línea recta sobre el eje X mediante una instrucción EGMMoveL.
+
+- La conexión se realiza mediante la interfaz ABBRobotEGM.
+- Se envía una corrección en Y con forma de seno, mientras el robot ejecuta una trayectoria recta en X definida en RAPID.
+- Parámetros de la onda:
+         * Amplitud: 5 mm
+         * Frecuencia: 0.7 Hz
+- El bucle de control está sincronizado a 48 ms, la frecuencia típica de EGM.
+
