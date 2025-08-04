@@ -53,8 +53,6 @@ Demuestra cómo aplicar una corrección de trayectoria senoidal en tiempo real s
 
 - La conexión se realiza mediante la interfaz ABBRobotEGM.
 - Se envía una corrección en Y con forma de seno, mientras el robot ejecuta una trayectoria recta en X definida en RAPID.
-- Parámetros de la onda:
-         * Amplitud: 5 mm
-         * Frecuencia: 0.7 Hz
+- Parámetros de la onda: amplitud: 5 mm, frecuencia: 0.7 Hz.
 - El bucle de control está sincronizado a 48 ms, la frecuencia típica de EGM.
 
