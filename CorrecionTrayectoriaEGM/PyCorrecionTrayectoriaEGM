@@ -1,3 +1,5 @@
+# Applies real-time Z-axis trajectory corrections to an ABB robot using estimated external force (Fz) via EGM and PyKDL
+
 import threading
 import socket
 import time
@@ -8,27 +10,27 @@ import matplotlib.pyplot as plt
 
 from ABBRobotEGM import EGM
 
-# ------------------ PARÁMETROS ------------------ #
-TIME_INTERVAL = 0.001
-STEPS = 100
-GAIN = 10  # Ganancia (mm/N)
-MAX_CORRECTION_MM = 50.0  # Límite de corrección permitido por el robot
-OFFSET = None
-DELAY = 10
+# ------------------ PARAMETERS -------------------------- #
+TIME_INTERVAL = 0.001              # Time step for plot updates (s)
+STEPS = 100                        # Number of samples to display
+GAIN = 10                          # Z correction gain [mm/N]
+MAX_CORRECTION_MM = 50.0           # Max correction allowed in Z [mm]
+OFFSET = None                      # Initial Fz value for offset correction
+DELAY = 10                         # Time to ignore data (robot stabilizing)
 
-# ------------------ VARIABLES GLOBALES ------------------ #
+# ------------------ GLOBAL VARIABLES -------------------- #
 t = np.arange(0, STEPS)
-torques = collections.deque(np.zeros(t.shape))
+torques = collections.deque(np.zeros(t.shape)) # Stores Fz history
 limits = [0.0, 0.0]
 force_z = 0.0
 lock = threading.Lock()
-fz_values = collections.deque(np.zeros(STEPS), maxlen=STEPS)
+fz_values = collections.deque(np.zeros(STEPS), maxlen=STEPS) # For plotting
 joint_position = kdl.JntArray(6)
 joint_velocity = kdl.JntArray(6)
 joint_torque = kdl.JntArray(6)
 wrench = kdl.Wrench()
 
-# Modelo KDL
+# ------------------ KDL ROBOT MODEL --------------------- #
 chain = kdl.Chain()
 frames = [
     kdl.Frame.DH(0, np.deg2rad(-90), 0.265, 0),
@@ -45,27 +47,28 @@ for H in frames:
 
 chain.addSegment(kdl.Segment(kdl.Joint(kdl.Joint.Fixed), kdl.Frame(kdl.Vector(0, 0, 0.080))))
 
+# External wrench estimator (gravity = -Z)
 gravity = kdl.Vector(0, 0, -9.8)
 estimator = kdl.ChainExternalWrenchEstimator(chain, gravity, 20, 1, 0)
 
-# ------------------ CONFIGURACIÓN DE LA GRÁFICA ------------------ #
+# ------------------ PLOT SETUP ------------------------- #
 plt.ion()
 fig, ax = plt.subplots()
 line, = ax.plot(list(fz_values), label='F_z [N]', color='blue')
 ax.set_ylim(-50, 100)
-ax.set_title('Fuerza estimada en Z')
-ax.set_xlabel('Tiempo (muestras)')
+ax.set_title('Estimated Force in Z')
+ax.set_xlabel('Time (samples)')
 ax.set_ylabel('F_z [N]')
 ax.legend()
 ax.grid(True)
 
-# ------------------ HILO DE LECTURA DE SENSORES ------------------ #
+# ----------------- SENSOR READING THREAD --------------- #
 def sensor_reader():
     global force_z, OFFSET
     mi_socket = socket.socket()
-    print("[WSL] Esperando datos del robot...")
+    print("[WSL] Waiting for robot data...")
     mi_socket.connect(("192.168.125.1", 1025))
-    print("[Socket] Mensaje inicial:", mi_socket.recv(1024).decode())
+    print("[Socket] Initial message:", mi_socket.recv(1024).decode())
 
     start = time.time()
     prev_index = 0
@@ -78,49 +81,27 @@ def sensor_reader():
                 continue
 
             index = int(data[0])
-            # print(data)
-
             arr = data[2:].split('|')
 
             if len(arr) != 3:
-                # print(f"[ERROR WSL] Formato incorrecto: {data}")
-                continue  # Ignora esta lectura pero sigue
+                continue  # Skip invalid lines
 
+            # Ensure ordered reception of 1–6
             if index != 1 and index != prev_index + 1:
                 prev_index = 0
                 continue
-
             prev_index = index
 
             joint_position[index - 1] = float(arr[0])
             joint_velocity[index - 1] = float(arr[1])
             joint_torque[index - 1] = float(arr[2])
 
-            # for i in range(6):
-            #     campo_limpio = arr[i].replace('[', '').replace(']', '').strip()
-            #     partes = campo_limpio.split('|')
-
-            #     if len(partes) != 3:
-            #         print(f"[ERROR WSL] Formato incorrecto en campo {i}: {arr[i]}")
-            #         continue  # Ignora esta lectura pero sigue
-
-            #     try:
-            #         pos, vel, trq = map(float, partes)
-            #         joint_position[i] = pos
-            #         joint_velocity[i] = vel
-            #         joint_torque[i] = trq
-            #     except ValueError:
-            #         print(f"[ERROR WSL] Conversión fallida en campo {i}: {partes}")
-            #         continue
-
+            # Once full joint state received
             if index == 6:
                 estimator.JntToExtWrench(joint_position, joint_velocity, joint_torque, wrench)
-
-                # CORRECIÓN TRAYECTORIA
                 fz = wrench.force.z()
 
-                # print(f"[WSL] Fz = {fz:.2f} N → Z_corr = {GAIN * fz:.2f}")
-
+                # Ignore initial readings for stability
                 if (time.time() - start) < DELAY:
                     continue
 
@@ -130,19 +111,17 @@ def sensor_reader():
                 else:
                     fz = OFFSET - fz
 
-                # print(fz)
-
                 with lock:
                     force_z = fz
         except Exception as e:
-            print("[Error] Lectura de sensores:", e)
+            print("[Error] Sensor reading failed:", e)
             break
 
     mi_socket.close()
 
-# ------------------ CORRECCIÓN DE TRAYECTORIA POR EGM ------------------ #
+# ---------------- MAIN EGM CONTROL LOOP ----------------- #
 def main():
-    # Iniciar hilos
+    # Start sensor reading thread
     threading.Thread(target=sensor_reader, daemon=True).start()
 
     while True:
@@ -152,42 +131,40 @@ def main():
         if offs is None:
             time.sleep(0.1)
             continue
-
         break
 
     print(force_z)
 
-    # Conexión EGM con el robot
+    # Start EGM communication
     with EGM() as egm:
-        print("[EGM] Esperando conexión con el robot...")
+        print("[EGM] Waiting for connection...")
         while True:
             success, _ = egm.receive_from_robot(timeout=1.0)
             if success:
-                print("[EGM] ¡Conectado al robot!")
+                print("[EGM] Connected to robot.")
                 break
 
-        print("[EGM] Aplicando correcciones en Z en función de Fz...")
+        print("[EGM] Sending Z corrections based on Fz...")
 
         while True:
             success, _ = egm.receive_from_robot(timeout=0.1)
             if not success:
-                print("[EGM] Conexión EGM perdida.")
+                print("[EGM] EGM connection lost.")
                 break
 
             with lock:
                 fz = force_z * GAIN
 
-            # Limitar fuerza para evitar sobresalto
+            # Clamp correction to safety limits
             fz_limited = max(min(fz, MAX_CORRECTION_MM), -MAX_CORRECTION_MM)
-            # z_correction = GAIN * fz_limited
-            z_correction = 0.0 # FIXME
+            z_correction = 0.0 
 
             print(f"[EGM] Fz = {fz:.2f} N → Z_correction = {z_correction:.2f} mm")
 
-            correction = np.array([0.0, 0.0, z_correction])  # Solo eje Z
+            correction = np.array([0.0, 0.0, z_correction])  # Apply correction in Z only
             egm.send_to_robot_path_corr(correction, age=1)
 
-            # Actualizar gráfica
+            # Update plot
             fz_values.append(fz)
             line.set_ydata(fz_values)
             line.set_xdata(range(len(fz_values)))
@@ -202,8 +179,8 @@ def main():
             limits[0] = min(limits[0], fz)
             limits[1] = max(limits[1], fz)
 
-            time.sleep(0.048)  # ~20 Hz
+            time.sleep(0.048)  # ~20 Hz control loop
 
-# ------------------ EJECUCIÓN ------------------ #
+# ------------------ EXECUTION ------------------- #
 if __name__ == "__main__":
     main()
