@@ -1,15 +1,18 @@
+# Applies sinusoidal Y-axis path correction to an ABB robot using EGM during linear motion
+
 from ABBRobotEGM import EGM
 import numpy as np
 import time
 
 def main() -> None:
     """
-    Example showing how to apply path corrections during robot movement.
-    This will apply a sinusoidal correction in the Y direction while the robot
-    moves along a straight line in the X direction (using EGMMoveL in RAPID).
+    Example: Sinusoidal correction in Y direction using ABB EGM interface.
     
-    The sinusoidal pattern:
-    - Amplitude: 5mm
+    The robot is expected to be executing a linear EGMMoveL in X direction.
+    This script sends real-time sinusoidal path corrections in Y.
+
+    Correction parameters:
+    - Amplitude: 5 mm
     - Frequency: 0.7 Hz
     """
     with EGM() as egm:
@@ -19,30 +22,32 @@ def main() -> None:
             if success:
                 print("Connected to robot!")
                 break
-            
-        # Parameters for sinusoidal correction
-        amplitude = 5.0    # mm
-        frequency = 0.7      # Hz
-        t_start = time.time()
         
+        # Sinusoidal parameters
+        amplitude = 5.0       # [mm]
+        frequency = 0.7       # [Hz]
+        t_start = time.time()
+
         print("Sending Y-axis path corrections...")
         while True:
             success, _ = egm.receive_from_robot(timeout=0.1)
             if not success:
                 print("Lost connection to robot")
                 break
-                
-            # Calculate Y correction using sine wave
+
+            # Elapsed time since start
             t = time.time() - t_start
+
+            # Calculate Y correction based on sine wave
             y_correction = amplitude * np.sin(2 * np.pi * frequency * t)
-            
-            # Create correction vector [x, y, z]
+
+            # Path correction vector: [X, Y, Z]
             correction = np.array([0.0, y_correction, 0.0])
-            
-            # Send path correction
+
+            # Send correction to robot
             egm.send_to_robot_path_corr(correction, age=1)
-            
-            # Match robot's sensor refresh rate of 48ms
+
+            # Match EGM update frequency (~20.8 Hz = 48 ms)
             time.sleep(0.048)
 
 if __name__ == "__main__":
